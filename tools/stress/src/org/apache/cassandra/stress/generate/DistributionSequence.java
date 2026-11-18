@@ -41,7 +41,8 @@ public class DistributionSequence extends Distribution
     private long nextWithWrap()
     {
         long next = this.next.getAndIncrement();
-        return start + (next % totalCount);
+        // floorMod keeps the offset non-negative when the counter is negative (e.g. a negative seed)
+        return start + Math.floorMod(next, totalCount);
     }
 
     @Override
