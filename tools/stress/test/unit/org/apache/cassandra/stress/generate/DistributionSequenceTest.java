@@ -128,4 +128,38 @@ public class DistributionSequenceTest
             }
         }
     }
+
+    @Test
+    public void negativeSeed() throws Exception
+    {
+        // Generator.setSeed() passes seed ^ salt, which can be negative
+        Distribution dist = OptionDistribution.get("seq(1..10)").get();
+        assertTrue(dist instanceof DistributionSequence);
+
+        dist.setSeed(-9);
+        assertEquals(2, dist.next());
+
+        assertSeedsStayInRange(dist, 1, 10);
+        assertSeedsStayInRange(OptionDistribution.get("seq(-1000..-10)").get(), -1000, -10);
+    }
+
+    private static void assertSeedsStayInRange(Distribution dist, long min, long max)
+    {
+        for (long seed : new long[]{ -1, -9, -10, -11, -12345, Integer.MIN_VALUE, Long.MIN_VALUE })
+        {
+            dist.setSeed(seed);
+            long last = dist.next();
+            assertTrue("seed " + seed + " gave " + last, last >= min && last <= max);
+            for (int i = 0; i < 2 * (max - min + 1); i++)
+            {
+                long next = dist.next();
+                assertTrue("seed " + seed + " gave " + next, next >= min && next <= max);
+                if (next > min)
+                    assertEquals(last + 1, next); //increase by one each step
+                else
+                    assertEquals(max, last); //wrap after the end
+                last = next;
+            }
+        }
+    }
 }
